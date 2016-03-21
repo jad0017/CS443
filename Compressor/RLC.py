@@ -134,7 +134,7 @@ def RLC(C):
         global RLC_Tp8
         R = RLC_Tp8
     else:
-        R = generate_RLC_translation_array(len(C))
+        R = gen_RLC_translation_array(len(C))
     # Return array
     a = []
     current = C[0][0]
@@ -174,7 +174,7 @@ def iRLC(a, N=0):
         tN = 0
         for i in range(len(a)):
             tN += a[i][0];
-        tN = math.sqrt(tN)
+        tN = int(math.sqrt(tN))
     else:
         tN = N
     # Generate the translation matrix, or just
@@ -184,7 +184,7 @@ def iRLC(a, N=0):
         global RLC_Tp8
         R = RLC_Tp8
     else:
-        R = generate_RLC_translation_array(tN)
+        R = gen_RLC_translation_array(tN)
     # Return matrix
     A = Matrix.zero_square_matrix(tN)
     idx = 0

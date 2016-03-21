@@ -78,7 +78,7 @@ def multiply_and_adjust(A, B):
         for j in range(len(B[0])):
             for k in range(len(B)):
                 C[i][j] += A[i][k] * B[k][j]
-            C[i][j] = round(C[i][j]) + 128
+            C[i][j] = int(round(C[i][j]))
     return C
 
 

@@ -5,6 +5,12 @@ def tests(N):
     print "1.." + str(N)
 
 
+def todo(message):
+    global TEST_NUM
+    print "not ok", str(TEST_NUM), "#TODO", message
+    TEST_NUM += 1
+
+
 def expect_pass(result, message=""):
     global TEST_NUM
     if result == True:

@@ -114,7 +114,6 @@ def print_block_partial_width(img, pixels, x_off, yb, N):
         sys.stdout.flush()
 
 
-
 def print_block_partial_height(img, pixels, xb, y_off, N):
     (width, height) = img.size
     ylen = height - y_off
@@ -168,13 +167,26 @@ def block_image(img, N):
     if width_off == 8:
         width_off = 0
     width_off_pos = width - (width % N)
-    width_blocks = width / N
+    width_blocks = width // N
 
     height_off = N - (height % N)
     if height_off == 8:
         height_off = 0
     height_off_pos = height - (height % N)
-    height_blocks = height / N
+    height_blocks = height // N
+
+    #
+    # The gist of this:
+    #
+    #  Loop over y blocks:
+    #    Loop over x blocks.
+    #    Loop over x overflow block.
+    #  Loop over y overflow block:
+    #    Loop over x blocks.
+    #    Loop over x overflow block.
+    #
+    # This is probably the ugliest thing I've written in a long time.
+    #
 
     pixels = img.load()
     for yb in range(height_blocks):

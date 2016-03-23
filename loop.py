@@ -14,17 +14,17 @@ import sys
 def print_image_mode(img):
     mode = img.mode
     if mode == '1':
-        print "1-bit(black and white)"
+        print("1-bit(black and white)")
     elif mode == 'L':
-        print "Grayscale (Luminosity)"
+        print("Grayscale (Luminosity)")
     elif mode == 'RGB':
-        print "RGB"
+        print("RGB")
     elif mode == 'RGBA':
-        print "RGBA"
+        print("RGBA")
     elif mode == 'P':
-        print "Palette"
+        print("Palette")
     else:
-        print "Some other mode:", mode
+        print("Some other mode:", mode)
 
 
 # Example of reading image data
@@ -140,7 +140,7 @@ def print_block_bottom_right(img, pixels, x_off, y_off, N):
     xlen = width - x_off
     xolen = N - xlen
 
-    ylen = height - ylen
+    ylen = height - y_off
     yolen = N - ylen
 
     for yo in range(ylen):
@@ -191,23 +191,23 @@ def block_image(img, N):
     pixels = img.load()
     for yb in range(height_blocks):
         for xb in range(width_blocks):
-            print "Block(%d, %d):" % (xb, yb)
+            print("Block(%d, %d):" % (xb, yb))
             print_block(img, pixels, xb, yb, N)
         # Address partial width block
         if width_off != 0:
-            print "Block(%d, %d):" % (width_blocks, yb)
+            print("Block(%d, %d):" % (width_blocks, yb))
             print_block_partial_width(img, pixels, width_off_pos, yb, N)
     if height_off != 0:
         for xb in range(width_blocks):
-            print "Block(%d, %d):" % (xb, height_blocks)
+            print("Block(%d, %d):" % (xb, height_blocks))
             print_block_partial_height(img, pixels, xb, height_off_pos, N)
         if width_off != 0:
-            print "Block(%d, %d):" % (width_blocks, height_blocks)
+            print("Block(%d, %d):" % (width_blocks, height_blocks))
             print_block_bottom_right(img, pixels, width_off_pos, height_off_pos, N)
 
 
 if (len(sys.argv) < 2) or (len(sys.argv) > 3):
-    print "Usage: {} <input> [output]".format(sys.argv[0])
+    print("Usage: {} <input> [output]".format(sys.argv[0]))
     sys.exit(1)
 
 infile = sys.argv[1]

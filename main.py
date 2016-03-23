@@ -10,7 +10,11 @@
 from PIL import Image
 
 import sys
-import Compressor
+import Compressor.DCT
+import Compressor.NCage
+import Compressor.Matrix
+import Compressor.Quantize
+import Compressor.RLC
 
 def test_image_mode(img):
     mode = img.mode
@@ -38,7 +42,7 @@ def get_block(img, pixels, xb, yb, N):
     for y in range(y_off, y_off + N):
         ymod = y % N
         for x in range(x_off, x_off + N):
-            M[ymod][x % N] = pixels[x, y])
+            M[ymod][x % N] = pixels[x, y]
     return M
 
 
@@ -93,8 +97,11 @@ def get_block_bottom_right(img, pixels, x_off, y_off, N):
 def compress_grayscale_block(oimg, M):
     # Single Channel: Luminance
     D = Compressor.DCT.DCT(M)
+    #print(str(D))
     C = Compressor.Quantize.quantize(D, Compressor.Quantize.QBASE_LUM)
+    #print(str(C))
     R = Compressor.RLC.RLC(C)
+    #print(str(R))
     oimg.write_block_rlc(R)
 
 
@@ -137,21 +144,21 @@ def compress_grayscale_image(img, oimg):
     for yb in range(height_blocks):
         for xb in range(width_blocks):
             #print("Block(%d, %d):" % (xb, yb))
-            M = get_block(img, pixels, xb, yb, N)
+            M = get_block(img, pixels, xb, yb, 8)
             compress_grayscale_block(oimg, M)
         # Address partial width block
         if width_off != 0:
             #print("Block(%d, %d):" % (width_blocks, yb))
-            M = get_block_partial_width(img, pixels, width_off_pos, yb, N)
+            M = get_block_partial_width(img, pixels, width_off_pos, yb, 8)
             compress_grayscale_block(oimg, M)
     if height_off != 0:
         for xb in range(width_blocks):
             #print("Block(%d, %d):" % (xb, height_blocks))
-            M = get_block_partial_height(img, pixels, xb, height_off_pos, N)
+            M = get_block_partial_height(img, pixels, xb, height_off_pos, 8)
             compress_grayscale_block(oimg, M)
         if width_off != 0:
             #print("Block(%d, %d):" % (width_blocks, height_blocks))
-            M = get_block_bottom_right(img, pixels, width_off_pos, height_off_pos, N)
+            M = get_block_bottom_right(img, pixels, width_off_pos, height_off_pos, 8)
             compress_grayscale_block(oimg, M)
     return True
 

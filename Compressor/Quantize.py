@@ -44,7 +44,8 @@ def quantize(D, Q):
     C = Matrix.zero_matrix(len(D[0]), len(D))
     for i in range(len(D)):
         for j in range(len(D[0])):
-            C[i][j] = round( D[i][j] / Q[i][j] )
+            #C[i][j] = round( D[i][j] / Q[i][j] )
+            C[i][j] = int(round( D[i][j] / Q[i][j] ) + 128)
     return C
 
 
@@ -65,7 +66,8 @@ def multiply_each(A, B):
     C = Matrix.zero_matrix(len(A[0]), len(A))
     for i in range(len(A)):
         for j in range(len(A[0])):
-            C[i][j] = A[i][j] * B[i][j]
+            #C[i][j] = A[i][j] * B[i][j]
+            C[i][j] = A[i][j] * ( B[i][j] - 128 )
     return C
 
 

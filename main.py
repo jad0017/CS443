@@ -10,170 +10,115 @@
 from PIL import Image
 
 import sys
+import Compressor
 
-def print_image_mode(img):
+def test_image_mode(img):
     mode = img.mode
     if mode == '1':
-        print("1-bit(black and white)")
+        print("Unsupported Image Mode: 1-bit(black and white)")
+        sys.exit(1)
     elif mode == 'L':
-        print("Grayscale (Luminosity)")
+        return Compressor.NCage.MODE_GRAYSCALE
     elif mode == 'RGB':
-        print("RGB")
+        return Compressor.NCage.MODE_RGB
     elif mode == 'RGBA':
-        print("RGBA")
+        print("Unsupported Image Mode: RGBA")
+        sys.exit(1)
     elif mode == 'P':
-        print("Palette")
-    else:
-        print("Some other mode:", mode)
+        print("Unsupported Image Mode: Palette")
+        sys.exit(1)
+    print("Unsupported Image Mode:", mode)
+    sys.exit(1)
 
 
-# Example of reading image data
-def print_pixels(img):
-    (width, height) = img.size
-    img_pixels = img.load()
-    for x in range(width):
-        for y in range(height):
-            pixel = img_pixels[x, y]
-            sys.stdout.write('Pixel[%d, %d]: ( ' % (x, y))
-            for p in pixel:
-                sys.stdout.write('%d ' % (p,) )
-            sys.stdout.write(')\n')
-            sys.stdout.flush()
-
-
-# Example of writing image data
-def blacken_image(img):
-    (width, height) = img.size
-    img_pixels = img.load()
-    for x in range(width):
-        for y in range(height):
-            pixel = img_pixels[x, y]
-            # Zero out the tuple. (RGB and RGBA only)
-            # L, 1, and P all take single values (int)
-            pixel = (0,) * len(pixel)
-            img_pixels[x, y] = pixel
-
-
-def print_pixel(img, pixels, x, y):
-    mode = img.mode
-    if mode == '1':
-        sys.stdout.write('%d ' % (pixels[x,y],))
-    elif mode == 'L':
-        sys.stdout.write('%03d ' % (pixels[x,y],))
-    elif mode == 'RGB':
-        sys.stdout.write('(%03d,%03d,%03d) ' % pixels[x,y])
-    elif mode == 'RGBA':
-        sys.stdout.write('(%03d,%03d,%03d,%03d) ' % pixels[x,y])
-    elif mode == 'P':
-        sys.stdout.write('%03d ' % (pixels[x,y],))
-    else:
-        sys.stdout.write('U ')
-
-
-def print_empty_pixel(img):
-    mode = img.mode
-    if mode == '1':
-        sys.stdout.write('- ')
-    elif mode == 'L':
-        sys.stdout.write('--- ')
-    elif mode == 'RGB':
-        sys.stdout.write('(---,---,---) ')
-    elif mode == 'RGBA':
-        sys.stdout.write('(---,---,---,---) ')
-    elif mode == 'P':
-        sys.stdout.write('--- ')
-    else:
-        sys.stdout.write('- ')
-
-
-def print_block(img, pixels, xb, yb, N):
+def get_block(img, pixels, xb, yb, N):
     x_off = N * xb
     y_off = N * yb
-
+    M = Compressor.Matrix.zero_square_matrix(N)
     for y in range(y_off, y_off + N):
-        sys.stdout.write('[ ')
+        ymod = y % N
         for x in range(x_off, x_off + N):
-            print_pixel(img, pixels, x, y)
-        sys.stdout.write(']\n')
-        sys.stdout.flush()
+            M[ymod][x % N] = pixels[x, y])
+    return M
 
 
-def print_block_partial_width(img, pixels, x_off, yb, N):
+def get_block_partial_width(img, pixels, x_off, yb, N):
     (width, height) = img.size
     xlen = width - x_off
     xolen = N - xlen
     y_off = N * yb
-
+    M = Compressor.Matrix.zero_square_matrix(N)
     for y in range(y_off, y_off + N):
-        sys.stdout.write('[ ')
+        ymod = y % N
         for xo in range(xlen):
-            print_pixel(img, pixels, x_off + xo, y)
+            M[ymod][xo] = pixels[x_off + xo, y]
         for xo in range(xolen):
-            print_empty_pixel(img)
-        sys.stdout.write(']\n')
-        sys.stdout.flush()
+            M[ymod][xlen + xo] = 0
+    return M
 
 
-def print_block_partial_height(img, pixels, xb, y_off, N):
+def get_block_partial_height(img, pixels, xb, y_off, N):
     (width, height) = img.size
     ylen = height - y_off
     yolen = N - ylen
     x_off = N * xb
-
+    M = Compressor.Matrix.zero_square_matrix(N)
     for yo in range(ylen):
-        sys.stdout.write('[ ')
         for x in range(x_off, x_off + N):
-            print_pixel(img, pixels, x, y_off + yo)
-        sys.stdout.write(']\n')
-        sys.stdout.flush()
+            M[yo][x % N] = pixels[x, y_off + yo]
     for yo in range(yolen):
-        sys.stdout.write('[ ')
         for x in range(N):
-            print_empty_pixel(img)
-        sys.stdout.write(']\n')
-        sys.stdout.flush()
+            M[ylen + yo][x] = 0
+    return M
 
 
-def print_block_bottom_right(img, pixels, x_off, y_off, N):
+def get_block_bottom_right(img, pixels, x_off, y_off, N):
     (width, height) = img.size
-
     xlen = width - x_off
     xolen = N - xlen
-
     ylen = height - y_off
     yolen = N - ylen
-
+    M = Compressor.Matrix.zero_square_matrix(N)
     for yo in range(ylen):
-        sys.stdout.write('[ ')
         for xo in range(xlen):
-            print_pixel(img, pixels, x_off + xo, y_off + yo)
+            M[yo][x % N] = pixels[x_off + xo, y_off + yo]
         for xo in range(xolen):
-            print_empty_pixel(img)
-        sys.stdout.write(']\n')
-        sys.stdout.flush()
+            M[yo][xlen + xo] = 0
     for yo in range(yolen):
-        sys.stdout.write('[ ')
         for x in range(N):
-            print_empty_pixel(img)
-        sys.stdout.write(']\n')
-        sys.stdout.flush()
+            M[ylen + yo][x] = 0
+    return M
 
 
-# Loop over image pixels and print each NxN block.
-def block_image(img, N):
+def compress_grayscale_block(oimg, M):
+    # Single Channel: Luminance
+    D = Compressor.DCT.DCT(M)
+    C = Compressor.Quantize.quantize(D, Compressor.Quantize.QBASE_LUM)
+    R = Compressor.RLC.RLC(C)
+    oimg.write_block_rlc(R)
+
+
+def decompress_grayscale_block(R):
+    C = Compressor.RLC.iRLC(R, 8)
+    D = Compressor.Quantize.dequantize(C, Compressor.Quantize.QBASE_LUM)
+    M = Compressor.DCT.iDCT(D)
+    return M
+
+
+def compress_grayscale_image(img, oimg):
     (width, height) = img.size
 
-    width_off = N - (width % N)
+    width_off = 8 - (width % 8)
     if width_off == 8:
         width_off = 0
-    width_off_pos = width - (width % N)
-    width_blocks = width // N
+    width_off_pos = width - (width % 8)
+    width_blocks = width // 8
 
-    height_off = N - (height % N)
+    height_off = 8 - (height % 8)
     if height_off == 8:
         height_off = 0
-    height_off_pos = height - (height % N)
-    height_blocks = height // N
+    height_off_pos = height - (height % 8)
+    height_blocks = height // 8
 
     #
     # The gist of this:
@@ -191,41 +136,47 @@ def block_image(img, N):
     pixels = img.load()
     for yb in range(height_blocks):
         for xb in range(width_blocks):
-            print("Block(%d, %d):" % (xb, yb))
-            print_block(img, pixels, xb, yb, N)
+            #print("Block(%d, %d):" % (xb, yb))
+            M = get_block(img, pixels, xb, yb, N)
+            compress_grayscale_block(oimg, M)
         # Address partial width block
         if width_off != 0:
-            print("Block(%d, %d):" % (width_blocks, yb))
-            print_block_partial_width(img, pixels, width_off_pos, yb, N)
+            #print("Block(%d, %d):" % (width_blocks, yb))
+            M = get_block_partial_width(img, pixels, width_off_pos, yb, N)
+            compress_grayscale_block(oimg, M)
     if height_off != 0:
         for xb in range(width_blocks):
-            print("Block(%d, %d):" % (xb, height_blocks))
-            print_block_partial_height(img, pixels, xb, height_off_pos, N)
+            #print("Block(%d, %d):" % (xb, height_blocks))
+            M = get_block_partial_height(img, pixels, xb, height_off_pos, N)
+            compress_grayscale_block(oimg, M)
         if width_off != 0:
-            print("Block(%d, %d):" % (width_blocks, height_blocks))
-            print_block_bottom_right(img, pixels, width_off_pos, height_off_pos, N)
+            #print("Block(%d, %d):" % (width_blocks, height_blocks))
+            M = get_block_bottom_right(img, pixels, width_off_pos, height_off_pos, N)
+            compress_grayscale_block(oimg, M)
+    return True
 
 
-if (len(sys.argv) < 2) or (len(sys.argv) > 3):
-    print("Usage: {} <input> [output]".format(sys.argv[0]))
+
+def compress_rgb_image(img, oimg):
+    print "Unsupported"
+
+
+if len(sys.argv) != 3:
+    print("Usage: {} <input> <output.ncage>".format(sys.argv[0]))
     sys.exit(1)
 
 infile = sys.argv[1]
-
-if len(sys.argv) == 3:
-    outfile = sys.argv[2]
-else:
-    outfile = None
-
+outfile = sys.argv[2]
 
 img = Image.open(infile)
+mode = test_image_mode(img)
+oimg = Compressor.NCage.NCageWriter(outfile, img.size[0], img.size[1], mode)
 
-print_image_mode(img)
-#print_pixels(img)
-#blacken_image(img)
-block_image(img, 8)
+if mode == Compressor.NCage.MODE_GRAYSCALE:
+    compress_grayscale_image(img, oimg)
+else: # Only other mode is MODE_RGB
+    compress_rgb_image(img, oimg)
 
-if outfile is not None:
-    img.save(outfile)
+oimg.close()
 
 sys.exit(0)

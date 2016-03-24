@@ -1,26 +1,18 @@
 import math
 
-def zero_matrix(N, M):
+def zero_matrix(N, M=None, btype=0):
     """
     Generate a matrix of size NxM filled with zeros.
 
     :param N: Width
-    :param M: Height
+    :param M: Height (default: to N)
+    :param btype: Type of value to drop in the matrix (default: 0)
 
     :returns: A matrix of size NxM filled with zeros.
     """
-    return [[0 for c in range(N)] for r in range(M)]
-
-
-def zero_square_matrix(N):
-    """
-    Generate a square matrix of size NxN filled with zeros.
-
-    :param N: Edge length
-
-    :returns: A matrix of size NxN filled with zeros.
-    """
-    return zero_matrix(N, N)
+    if M is None:
+        M = N
+    return [[btype for c in range(N)] for r in range(M)]
 
 
 def transpose(A):

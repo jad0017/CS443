@@ -35,63 +35,63 @@ def test_image_mode(img):
     sys.exit(1)
 
 
-def get_block(img, pixels, xb, yb, N):
-    x_off = N * xb
-    y_off = N * yb
-    M = Compressor.Matrix.zero_square_matrix(N)
-    for y in range(y_off, y_off + N):
-        ymod = y % N
-        for x in range(x_off, x_off + N):
-            M[ymod][x % N] = pixels[x, y]
-    return M
-
-
-def get_block_partial_width(img, pixels, x_off, yb, N):
-    (width, height) = img.size
-    xlen = width - x_off
-    xolen = N - xlen
-    y_off = N * yb
-    M = Compressor.Matrix.zero_square_matrix(N)
-    for y in range(y_off, y_off + N):
-        ymod = y % N
-        for xo in range(xlen):
-            M[ymod][xo] = pixels[x_off + xo, y]
-        for xo in range(xolen):
-            M[ymod][xlen + xo] = 0
-    return M
-
-
-def get_block_partial_height(img, pixels, xb, y_off, N):
-    (width, height) = img.size
-    ylen = height - y_off
-    yolen = N - ylen
-    x_off = N * xb
-    M = Compressor.Matrix.zero_square_matrix(N)
-    for yo in range(ylen):
-        for x in range(x_off, x_off + N):
-            M[yo][x % N] = pixels[x, y_off + yo]
-    for yo in range(yolen):
-        for x in range(N):
-            M[ylen + yo][x] = 0
-    return M
-
-
-def get_block_bottom_right(img, pixels, x_off, y_off, N):
-    (width, height) = img.size
-    xlen = width - x_off
-    xolen = N - xlen
-    ylen = height - y_off
-    yolen = N - ylen
-    M = Compressor.Matrix.zero_square_matrix(N)
+def get_block(pixels, xbp, ybp, N, block_type):
+    (xoff, xlen) = xbp
+    (yoff, ylen) = ybp
+    M = Compressor.Matrix.zero_matrix(N, btype=block_type)
     for yo in range(ylen):
         for xo in range(xlen):
-            M[yo][x % N] = pixels[x_off + xo, y_off + yo]
-        for xo in range(xolen):
-            M[yo][xlen + xo] = 0
-    for yo in range(yolen):
-        for x in range(N):
-            M[ylen + yo][x] = 0
+            M[yo][xo] = pixels[xoff + xo, yoff + yo]
     return M
+
+
+def compress_image(img, oimg, compress_block_fn, block_type):
+    N = 8
+    (width, height) = img.size
+
+    width_mod = width % N
+    width_blocks = width // N
+    width_bp = (width - width_mod, width_mod)
+
+    height_mod = height % N
+    height_blocks = height // N
+    height_bp = (height - height_mod, height_mod)
+
+    #
+    # The gist of this:
+    #
+    #  Loop over y blocks:
+    #    Loop over x blocks.
+    #    Loop over x overflow block.
+    #  Loop over y overflow block:
+    #    Loop over x blocks.
+    #    Loop over x overflow block.
+    #
+    # This is probably the ugliest thing I've written in a long time.
+    #
+
+    pixels = img.load()
+    for yb in range(height_blocks):
+        yoff = yb * N
+        ybp = (yoff, N)
+        for xb in range(width_blocks):
+            M = get_block(pixels, (xb * N, N), ybp, N, block_type)
+            compress_block_fn(oimg, M)
+        # Address partial width block
+        if width_mod != 0:
+            M = get_block(pixels, width_bp, ybp, N, block_type)
+            compress_block_fn(oimg, M)
+    # Address parital height block
+    if height_mod != 0:
+        for xb in range(width_blocks):
+            M = get_block(pixels, (xb * N, N), height_bp, N, block_type)
+            compress_block_fn(oimg, M)
+        # Address lower right block if partial height and partial width
+        if width_mod != 0:
+            M = get_block(pixels, width_bp, height_bp, N, block_type)
+            compress_block_fn(oimg, M)
+    return True
+
 
 
 def compress_grayscale_block(oimg, M):
@@ -113,59 +113,33 @@ def decompress_grayscale_block(R):
 
 
 def compress_grayscale_image(img, oimg):
-    (width, height) = img.size
+    return compress_image(img, oimg, compress_grayscale_block, 0)
 
-    width_off = 8 - (width % 8)
-    if width_off == 8:
-        width_off = 0
-    width_off_pos = width - (width % 8)
-    width_blocks = width // 8
 
-    height_off = 8 - (height % 8)
-    if height_off == 8:
-        height_off = 0
-    height_off_pos = height - (height % 8)
-    height_blocks = height // 8
+def compress_rgb_blocks(oimg, M):
+    # Each block holds pixel tuples: (R, G, B)
+    # First convert to YCbCr
+    # Then DCT each channel
+    # Then Quantize each channel
+    # Then RLC each channel
+    # Then write each channel to the file (Y -> Cb -> Cr)
+    print("Unsupported!")
+    sys.exit(1)
 
-    #
-    # The gist of this:
-    #
-    #  Loop over y blocks:
-    #    Loop over x blocks.
-    #    Loop over x overflow block.
-    #  Loop over y overflow block:
-    #    Loop over x blocks.
-    #    Loop over x overflow block.
-    #
-    # This is probably the ugliest thing I've written in a long time.
-    #
 
-    pixels = img.load()
-    for yb in range(height_blocks):
-        for xb in range(width_blocks):
-            #print("Block(%d, %d):" % (xb, yb))
-            M = get_block(img, pixels, xb, yb, 8)
-            compress_grayscale_block(oimg, M)
-        # Address partial width block
-        if width_off != 0:
-            #print("Block(%d, %d):" % (width_blocks, yb))
-            M = get_block_partial_width(img, pixels, width_off_pos, yb, 8)
-            compress_grayscale_block(oimg, M)
-    if height_off != 0:
-        for xb in range(width_blocks):
-            #print("Block(%d, %d):" % (xb, height_blocks))
-            M = get_block_partial_height(img, pixels, xb, height_off_pos, 8)
-            compress_grayscale_block(oimg, M)
-        if width_off != 0:
-            #print("Block(%d, %d):" % (width_blocks, height_blocks))
-            M = get_block_bottom_right(img, pixels, width_off_pos, height_off_pos, 8)
-            compress_grayscale_block(oimg, M)
-    return True
-
+def decompress_rgb_block(R, quant):
+    # Need to know the quantization type since this is a single block
+    # not all three.
+    # First iRLC(R, 8)
+    # Then Dequantize(C, quant)
+    # Then iDCT(D)
+    # Finally return the matrix
+    print("Unsupported!")
+    sys.exit(1)
 
 
 def compress_rgb_image(img, oimg):
-    print "Unsupported"
+    return compress_image(img, oimg, compress_rgb_block, (0, 0, 0))
 
 
 if len(sys.argv) != 3:

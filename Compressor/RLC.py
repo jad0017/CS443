@@ -186,7 +186,7 @@ def iRLC(a, N=0):
     else:
         R = gen_RLC_translation_array(tN)
     # Return matrix
-    A = Matrix.zero_square_matrix(tN)
+    A = Matrix.zero_matrix(tN)
     idx = 0
     for i in range(len(a)):
         (count, value) = a[i]

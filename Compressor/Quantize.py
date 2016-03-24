@@ -1,6 +1,6 @@
 import math
 # Local imports
-import Matrix
+from . import Matrix
 
 # Base quantization matrices given in the slides.
 

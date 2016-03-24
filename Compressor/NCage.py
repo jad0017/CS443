@@ -33,12 +33,13 @@ class NCageReader:
         self.blocks_rlc = []
 
     # I'm lazy, so this is just going to read the whole file into memory.
+    # It's simple to do it the other way with iterators... but meh
     def load(self, filename):
         ifile = open(filename, 'rb')
         # Magic, Mode, Width, Height
         header_bytes = ifile.read(5 + 1 + 4 + 4)
         (magic, mode, width, height) = struct.unpack('<5s1B2I', header_bytes)
-        if magic != 'NCAGE':
+        if magic != str.encode('NCAGE'):
             raise ValueError('This file is like Ice Cube in Are We There Yet?...'
                              + 'Not Nick Cage')
         if mode > MODE_RGB:
@@ -66,7 +67,7 @@ class NCageReader:
         acount = 0
         while True:
             s = ifile.read(2)
-            if s == '':
+            if len(s) == 0:
                 break
             (length, value) = struct.unpack('2B', s)
             if acount == 64:
@@ -90,7 +91,7 @@ class NCageReader:
 class NCageWriter:
     def __init__(self, filename, width, height, mode):
         self.ofile = open(filename, 'wb')
-        header_bytes = struct.pack('<5s1B2I', 'NCAGE', mode, width, height)
+        header_bytes = struct.pack('<5s1B2I', str.encode('NCAGE'), mode, width, height)
         self.ofile.write(header_bytes)
 
     # Write a block in RLC form...

@@ -40,8 +40,9 @@ def get_block(pixels, xbp, ybp, N, block_type):
     (yoff, ylen) = ybp
     M = Compressor.Matrix.zero_matrix(N, btype=block_type)
     for yo in range(ylen):
+        y = yoff + yo
         for xo in range(xlen):
-            M[yo][xo] = pixels[xoff + xo, yoff + yo]
+            M[yo][xo] = pixels[xoff + xo, y]
     return M
 
 
@@ -116,6 +117,66 @@ def compress_grayscale_image(img, oimg):
     return compress_image(img, oimg, compress_grayscale_block, 0)
 
 
+def copy_block(img, M, xbp, ybp, N):
+    # TODO: Investigate putdata(data, scale, offset)
+    # data is a list:
+    # pixel = <idx> * scale + offset
+    # Sooo img.putdata(M[y][0:xlen], xoff, yoff * N)?
+    (xoff, xlen) = xbp
+    (yoff, ylen) = ybp
+    for yo in range(ylen):
+        y = yoff + yo
+        for xo in range(xlen):
+            img.putpixel((xoff + xo, y), M[yo][xo])
+
+
+def decompress_grayscale_image(img, outfile):
+    N = 8
+    (width, height) = img.size
+    (wblocks, hblocks) = img.size_blocks
+    (twblocks, thblocks) = img.size_true_blocks
+
+    width_mod = width % N
+    width_bp = (width - width_mod, width_mod)
+
+    height_mod = height % N
+    height_bp = (height - height_mod, height_mod)
+
+    oimg = Image.new('L', img.size)
+
+    # Should probably check len(img) at some point
+    # but the exception handler will cover us.
+    blkidx = 0
+    for yb in range(hblocks):
+        ybp = (yb * N, N)
+        for xb in range(wblocks):
+            R = img[blkidx]
+            blkidx += 1
+            M = decompress_grayscale_block(R)
+            copy_block(oimg, M, (xb * N, N), ybp, N)
+        if twblocks != wblocks:
+            # We have a partial X block to take care off
+            R = img[blkidx]
+            blkidx += 1
+            M = decompress_grayscale_block(R)
+            copy_block(oimg, M, width_bp, ybp, N)
+    if thblocks != hblocks:
+        # Partial Y block
+        for xb in range(wblocks):
+            R = img[blkidx]
+            blkidx += 1
+            M = decompress_grayscale_block(R)
+            copy_block(oimg, M, (xb * N, N), height_bp, N)
+        # Partial Y and Partial X block (bottom right corner)
+        if twblocks != wblocks:
+            R = img[blkidx]
+            blkidx += 1
+            M = decompress_grayscale_block(R)
+            copy_block(oimg, M, width_bp, height_bp, N)
+    # They're getting a BMP.  Don't care if they don't want it.
+    oimg.save(outfile, 'BMP')
+
+
 def compress_rgb_blocks(oimg, M):
     # Each block holds pixel tuples: (R, G, B)
     # First convert to YCbCr
@@ -142,22 +203,39 @@ def compress_rgb_image(img, oimg):
     return compress_image(img, oimg, compress_rgb_block, (0, 0, 0))
 
 
-if len(sys.argv) != 3:
-    print("Usage: {} <input> <output.ncage>".format(sys.argv[0]))
+def decompress_rgb_image(img, outfile):
+    print("Unsupported!")
     sys.exit(1)
 
-infile = sys.argv[1]
-outfile = sys.argv[2]
 
-img = Image.open(infile)
-mode = test_image_mode(img)
-oimg = Compressor.NCage.NCageWriter(outfile, img.size[0], img.size[1], mode)
+if len(sys.argv) != 4:
+    print("Usage: {} <c|d> <input> <output.ncage>".format(sys.argv[0]))
+    sys.exit(1)
 
-if mode == Compressor.NCage.MODE_GRAYSCALE:
-    compress_grayscale_image(img, oimg)
-else: # Only other mode is MODE_RGB
-    compress_rgb_image(img, oimg)
+op = sys.argv[1]
+infile = sys.argv[2]
+outfile = sys.argv[3]
 
-oimg.close()
+if op == 'c':
+    img = Image.open(infile)
+    mode = test_image_mode(img)
+    oimg = Compressor.NCage.NCageWriter(outfile, img.size[0], img.size[1], mode)
+
+    if mode == Compressor.NCage.MODE_GRAYSCALE:
+        compress_grayscale_image(img, oimg)
+    else: # Only other mode is MODE_RGB
+        compress_rgb_image(img, oimg)
+    oimg.close()
+elif op == 'd':
+    img = Compressor.NCage.NCageReader()
+    img.load(infile)
+
+    if img.mode == Compressor.NCage.MODE_GRAYSCALE:
+        decompress_grayscale_image(img, outfile)
+    else: # Only other mode is MODE_RGB
+        decompress_rgb_image(img, outfile)
+else:
+    print("Unknown operation: ", op)
+    sys.exit(1)
 
 sys.exit(0)

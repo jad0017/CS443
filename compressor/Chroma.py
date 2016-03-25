@@ -33,7 +33,8 @@ def sampling(A, X, Y):
             yin_420= input('Please enter your file name for the Y channel image, including the extension: ')
             cbin_420= input('Please enter your file name for the Cb channel image, including the extension: ')
             crin_420= input('Please enter your file name for the Cr channel image, including the extension: ')
-            #sample_420(yin_420,cbin_420,crin_420)
+            sample_420(cbin_420)
+            sample_420(crin_420)
 
         elif (A==4) and (X==1) and (Y==1):
             print("4:1:1 subsampling")
@@ -45,6 +46,50 @@ def sampling(A, X, Y):
 
         else:
             print("Something went wrong.")
+
+def sample_420(imgstring):
+    """
+    Perform 4:2:0 subsampling on an image.
+
+    :param imgstring: a string of the target image's name
+
+    :returns: an image with the filenamesubsampled_411_imgstring
+    """
+
+    try:
+        im = Image.open(imgstring)
+    except IOError:
+        print('This was an invalid file. Please try again.')
+        sys.exit(0)
+
+    for Y in range (im.size[1]):
+        if Y == 0: #if it's the first row, then copy every other pixel
+            for X in range (im.size[0]):
+                i = 1
+                if (i == 1):
+                    (r,g,b) = im.getpixel((X,Y))
+                    i = i + 1
+                else:
+                    im.putpixel((X,Y), (r,g,b))
+                    i = 1
+
+        elif Y%2 == 0: #if it's an even row, then copy pixel from the row above it
+            for X in range (im.size[0]):
+                (r,g,b) = im.getpixel((X,(Y-1)))
+                im.putpixel((X,Y-1), (r,g,b))
+
+        else: # if it's an odd row, then copy every other pixel
+            for X in range (im.size[0]):
+                i = 1
+                if (i == 1):
+                    (r,g,b) = im.getpixel((X,Y))
+                    i = i + 1
+                else:
+                    im.putpixel((X,Y), (r,g,b))
+                    i = 1
+
+    outname = "subsampled_420_" + imgstring
+    im.save(outname)
 
 def sample_411(imgstring):
     """
@@ -76,11 +121,6 @@ def sample_411(imgstring):
             else:
                 im.putpixel((X,Y), (r,g,b))
                 i = 1
-            #if imageIndex == 0:
-            #    y = min(int(.299*r + .587*g + .144*b), 255)
-            #    r = g = b = y
-
-            #im.putpixel((X,Y), (r,g,b))
 
     outname = "subsampled_411_" + imgstring
     im.save(outname)

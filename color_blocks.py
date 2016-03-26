@@ -14,12 +14,40 @@ import Compressor.Matrix
 
 
 def to_rgb(M):
-    print("Missing codes!")
+    ConvertedMatrix = Compressor.Matrix.zero_matrix(len(M[0]), len(M))
+
+    for Y in range (len(M)):
+        for X in range (len(M[0])):
+            (y,cb,cr) = M[Y][X]
+
+            r_temp = int(y + (1.402*(cr - 128)))
+            g_temp = int(y - (0.34414*(cb - 128)) - (0.71414*(cr - 128)))
+            b_temp = int(y + (1.772*(cb - 128)))
+
+            (y,cb,cr) = (r_temp,g_temp,b_temp)
+
+            ConvertedMatrix[Y][X] = (y,cb,cr)
+
+    return ConvertedMatrix
     sys.exit(1)
 
 
 def to_ycbcr(M):
-    print("Missing codes!")
+    ConvertedMatrix = Compressor.Matrix.zero_matrix(len(M[0]), len(M))
+
+    for Y in range (len(M)):
+        for X in range (len(M[0])):
+            (r,g,b) = M[Y][X]
+
+            y_temp = int(.299*r + .587*g + .144*b)
+            cb_temp = int((-.168736*r) + (-.331264*g) + (b/2.0) + 128)
+            cr_temp = int((.5*r) + (-.418688*g) + (-.081312*b) + 128)
+
+            (r,g,b) = (y_temp,cb_temp,cr_temp)
+
+            ConvertedMatrix[Y][X] = (r,g,b)
+
+    return ConvertedMatrix
     sys.exit(1)
 
 

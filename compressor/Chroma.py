@@ -63,7 +63,7 @@ def sample_420(imgstring):
         sys.exit(0)
 
     for Y in range (im.size[1]):
-        if Y == 0: #if it's the first row, then copy every other pixel
+        if (Y % 2) == 0: #if it's the first row, then copy every other pixel
             for X in range (im.size[0]):
                 i = 1
                 if (i == 1):
@@ -73,20 +73,10 @@ def sample_420(imgstring):
                     im.putpixel((X,Y), (r,g,b))
                     i = 1
 
-        elif Y%2 == 0: #if it's an even row, then copy pixel from the row above it
+        else: #if it's an even row, then copy pixel from the row above it
             for X in range (im.size[0]):
                 (r,g,b) = im.getpixel((X,(Y-1)))
                 im.putpixel((X,Y-1), (r,g,b))
-
-        else: # if it's an odd row, then copy every other pixel
-            for X in range (im.size[0]):
-                i = 1
-                if (i == 1):
-                    (r,g,b) = im.getpixel((X,Y))
-                    i = i + 1
-                else:
-                    im.putpixel((X,Y), (r,g,b))
-                    i = 1
 
     outname = "subsampled_420_" + imgstring
     im.save(outname)
@@ -111,16 +101,11 @@ def sample_411(imgstring):
 
     for Y in range (im.size[1]):
         for X in range (im.size[0]):
-            i = 1
-            if (i == 1):
+            if (X % 4) == 0:
                 (r,g,b) = im.getpixel((X,Y))
-                i = i + 1
-            elif (1 < i < 4):
-                im.putpixel((X,Y), (r,g,b))
                 i = i + 1
             else:
                 im.putpixel((X,Y), (r,g,b))
-                i = 1
 
     outname = "subsampled_411_" + imgstring
     im.save(outname)

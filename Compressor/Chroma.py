@@ -72,7 +72,7 @@ def chroma_subsample(M, spec):
                     A[y][x] = A[y - 1][x]
                 elif (x % x2mod == 0):
                     V = M[y][x]
-                A[y][x] = v
+                A[y][x] = V
     return A
 
 

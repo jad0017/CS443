@@ -319,7 +319,7 @@ for o,a in opts:
             sys.exit(1)
         compress = True
     elif o in ("-d", "--decompress"):
-         if (compress == True) or (decompress == True):
+        if (compress == True) or (decompress == True):
             print("Only one of --compress and --decompress may be specified!")
             usage()
             sys.exit(1)

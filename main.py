@@ -10,6 +10,7 @@
 from PIL import Image
 
 import sys
+import getopt
 from Compressor import Chroma
 from Compressor import Colors
 from Compressor import DCT
@@ -17,6 +18,17 @@ from Compressor import NCage
 from Compressor import Matrix
 from Compressor import Quantize
 from Compressor import RLC
+
+def usage():
+    print("Usage: %s --compress [options] <input> <output.ncage>"
+          % (sys.argv[0],))
+    print("       %s --decompress [options] <input.ncage> <output.bmp>"
+          % (sys.argv[0],))
+    print("\nOptions:")
+    print(" --chroma-subsampling=<spec>   Use Chroma Subsampling (ex. 4:2:0)")
+    print(" --dump-dct-coefficients=<out> Dump DCT coefficients per block to")
+    print("                               the file <out>.")
+
 
 def test_image_mode(img):
     mode = img.mode
@@ -279,16 +291,61 @@ def decompress_rgb_image(img, outfile):
     oimg.save(outfile, 'BMP')
 
 
-if len(sys.argv) != 4:
-    print("Usage: {} c <input> <output.ncage>".format(sys.argv[0]))
-    print("       {} d <input.ncage> <output.bmp>".format(sys.argv[0]))
+try:
+    longopts=["help","compress","decompress","dump-dct-coefficients=",
+              "chroma-subsampling="]
+    opts, args = getopt.getopt(sys.argv[1:], "hcd", longopts)
+except getopt.GetoptError as err:
+    print(str(err))
+    usage()
     sys.exit(1)
 
-op = sys.argv[1]
-infile = sys.argv[2]
-outfile = sys.argv[3]
+dct_output = None
+chroma_spec = "4:4:4"
+infile = None
+outfile = None
 
-if op == 'c':
+compress = False
+decompress = False
+
+for o,a in opts:
+    if o in ("-h", "--help"):
+        usage()
+        sys.exit(0)
+    elif o in ("-c", "--compress"):
+        if (compress == True) or (decompress == True):
+            print("Only one of --compress and --decompress may be specified!")
+            usage()
+            sys.exit(1)
+        compress = True
+    elif o in ("-d", "--decompress"):
+         if (compress == True) or (decompress == True):
+            print("Only one of --compress and --decompress may be specified!")
+            usage()
+            sys.exit(1)
+        decompress = True
+    elif o == "--chroma-subsampling":
+        chroma_spec = a
+    elif o == "--dunp-dct-coefficients":
+        dct_output = a
+    else:
+        print("Unknown option:", o)
+        usage()
+        sys.exit(1)
+
+if len(args) < 2:
+    print("Missing arguments!")
+    usage()
+    sys.exit(1)
+elif len(args) > 2:
+    print("Too many arguments!")
+    usage()
+    sys.exit(1)
+
+infile = args[0]
+outfile = args[1]
+
+if compress:
     img = Image.open(infile)
     mode = test_image_mode(img)
     oimg = NCage.NCageWriter(outfile, img.size[0], img.size[1], mode)
@@ -296,9 +353,9 @@ if op == 'c':
     if mode == NCage.MODE_GRAYSCALE:
         compress_grayscale_image(img, oimg)
     else: # Only other mode is MODE_RGB
-        compress_rgb_image(img, oimg, "4:4:4")
+        compress_rgb_image(img, oimg, chroma_spec)
     oimg.close()
-elif op == 'd':
+elif decompress:
     img = NCage.NCageReader()
     img.load(infile)
 
@@ -307,7 +364,8 @@ elif op == 'd':
     else: # Only other mode is MODE_RGB
         decompress_rgb_image(img, outfile)
 else:
-    print("Unknown operation: ", op)
+    print("One of --compress and --decompress must be specified!")
+    usage()
     sys.exit(1)
 
 sys.exit(0)

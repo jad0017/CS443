@@ -158,9 +158,9 @@ def decompress_grayscale_image(img, outfile):
     # Should probably check len(img) at some point
     # but the exception handler will cover us.
     blkidx = 0
-    for yb in range(hblocks):
+    for yb in range(thblocks):
         ybp = (yb * N, N)
-        for xb in range(wblocks):
+        for xb in range(twblocks):
             R = img[blkidx]
             blkidx += 1
             M = decompress_grayscale_block(R)
@@ -173,7 +173,7 @@ def decompress_grayscale_image(img, outfile):
             copy_block(oimg, M, width_bp, ybp, N)
     if thblocks != hblocks:
         # Partial Y block
-        for xb in range(wblocks):
+        for xb in range(twblocks):
             R = img[blkidx]
             blkidx += 1
             M = decompress_grayscale_block(R)
@@ -265,9 +265,9 @@ def decompress_rgb_image(img, outfile):
     # Should probably check len(img) at some point
     # but the exception handler will cover us.
     blkidx = 0
-    for yb in range(hblocks):
+    for yb in range(thblocks):
         ybp = (yb * N, N)
-        for xb in range(wblocks):
+        for xb in range(twblocks):
             M = get_dec_rgb_block(img, blkidx)
             blkidx += 3
             copy_block(oimg, M, (xb * N, N), ybp, N)
@@ -278,7 +278,7 @@ def decompress_rgb_image(img, outfile):
             copy_block(oimg, M, width_bp, ybp, N)
     if thblocks != hblocks:
         # Partial Y block
-        for xb in range(wblocks):
+        for xb in range(twblocks):
             M = get_dec_rgb_block(img, blkidx)
             blkidx += 3
             copy_block(oimg, M, (xb * N, N), height_bp, N)

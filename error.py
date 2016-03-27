@@ -36,8 +36,8 @@ def error_gray(im1, im2):
 
 
 
-def error_color(im1, im2):
-   (rs,  gs,  bs) = (0, 0, 0)
+def error_rgb(im1, im2):
+    (rs,  gs,  bs) = (0, 0, 0)
     (ys, cbs, crs) = (0, 0, 0)
 
     if not im1.size == im2.size:

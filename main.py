@@ -10,11 +10,13 @@
 from PIL import Image
 
 import sys
-import Compressor.DCT
-import Compressor.NCage
-import Compressor.Matrix
-import Compressor.Quantize
-import Compressor.RLC
+from Compressor import Chroma
+from Compressor import Colors
+from Compressor import DCT
+from Compressor import NCage
+from Compressor import Matrix
+from Compressor import Quantize
+from Compressor import RLC
 
 def test_image_mode(img):
     mode = img.mode
@@ -22,9 +24,9 @@ def test_image_mode(img):
         print("Unsupported Image Mode: 1-bit(black and white)")
         sys.exit(1)
     elif mode == 'L':
-        return Compressor.NCage.MODE_GRAYSCALE
+        return NCage.MODE_GRAYSCALE
     elif mode == 'RGB':
-        return Compressor.NCage.MODE_RGB
+        return NCage.MODE_RGB
     elif mode == 'RGBA':
         print("Unsupported Image Mode: RGBA")
         sys.exit(1)
@@ -38,7 +40,7 @@ def test_image_mode(img):
 def get_block(pixels, xbp, ybp, N, block_type):
     (xoff, xlen) = xbp
     (yoff, ylen) = ybp
-    M = Compressor.Matrix.zero_matrix(N, btype=block_type)
+    M = Matrix.zero_matrix(N, btype=block_type)
     for yo in range(ylen):
         y = yoff + yo
         for xo in range(xlen):
@@ -46,7 +48,7 @@ def get_block(pixels, xbp, ybp, N, block_type):
     return M
 
 
-def compress_image(img, oimg, compress_block_fn, block_type):
+def compress_image(img, oimg, compress_block_fn, block_type, spec):
     N = 8
     (width, height) = img.size
 
@@ -77,44 +79,41 @@ def compress_image(img, oimg, compress_block_fn, block_type):
         ybp = (yoff, N)
         for xb in range(width_blocks):
             M = get_block(pixels, (xb * N, N), ybp, N, block_type)
-            compress_block_fn(oimg, M)
+            compress_block_fn(oimg, M, spec)
         # Address partial width block
         if width_mod != 0:
             M = get_block(pixels, width_bp, ybp, N, block_type)
-            compress_block_fn(oimg, M)
+            compress_block_fn(oimg, M, spec)
     # Address parital height block
     if height_mod != 0:
         for xb in range(width_blocks):
             M = get_block(pixels, (xb * N, N), height_bp, N, block_type)
-            compress_block_fn(oimg, M)
+            compress_block_fn(oimg, M, spec)
         # Address lower right block if partial height and partial width
         if width_mod != 0:
             M = get_block(pixels, width_bp, height_bp, N, block_type)
-            compress_block_fn(oimg, M)
+            compress_block_fn(oimg, M, spec)
     return True
 
 
 
-def compress_grayscale_block(oimg, M):
+def compress_grayscale_block(oimg, M, spec):
     # Single Channel: Luminance
-    D = Compressor.DCT.DCT(M)
-    #print(str(D))
-    C = Compressor.Quantize.quantize(D, Compressor.Quantize.QBASE_LUM)
-    #print(str(C))
-    R = Compressor.RLC.RLC(C)
-    #print(str(R))
+    D = DCT.DCT(M)
+    C = Quantize.quantize(D, Quantize.QBASE_LUM)
+    R = RLC.RLC(C)
     oimg.write_block_rlc(R)
 
 
 def decompress_grayscale_block(R):
-    C = Compressor.RLC.iRLC(R, 8)
-    D = Compressor.Quantize.dequantize(C, Compressor.Quantize.QBASE_LUM)
-    M = Compressor.DCT.iDCT(D)
+    C = RLC.iRLC(R, 8)
+    D = Quantize.dequantize(C, Quantize.QBASE_LUM)
+    M = DCT.iDCT(D)
     return M
 
 
 def compress_grayscale_image(img, oimg):
-    return compress_image(img, oimg, compress_grayscale_block, 0)
+    return compress_image(img, oimg, compress_grayscale_block, 0, None)
 
 
 def copy_block(img, M, xbp, ybp, N):
@@ -177,39 +176,112 @@ def decompress_grayscale_image(img, outfile):
     oimg.save(outfile, 'BMP')
 
 
-def compress_rgb_blocks(oimg, M):
+def compress_rgb_block(oimg, M, quant):
+    D = DCT.DCT(M)
+    C = Quantize.quantize(D, quant)
+    R = RLC.RLC(C)
+    oimg.write_block_rlc(R)
+
+
+def compress_rgb_blocks(oimg, M, spec):
     # Each block holds pixel tuples: (R, G, B)
     # First convert to YCbCr
     # Then DCT each channel
     # Then Quantize each channel
     # Then RLC each channel
     # Then write each channel to the file (Y -> Cb -> Cr)
-    print("Unsupported!")
-    sys.exit(1)
+    A = Colors.RGB_to_YCbCr(M)
+
+    # Split matrix into channels
+    Y  = [[ A[y][x][0] for x in range(len(M[0]))] for y in range(len(M))]
+    CB = [[ A[y][x][1] for x in range(len(M[0]))] for y in range(len(M))]
+    CR = [[ A[y][x][2] for x in range(len(M[0]))] for y in range(len(M))]
+
+    # Lumenance
+    compress_rgb_block(oimg, Y, Quantize.QBASE_LUM)
+    # Chromanance
+    CB = Chroma.chroma_subsample(CB, spec)
+    compress_rgb_block(oimg, CB, Quantize.QBASE_CHR)
+    CR = Chroma.chroma_subsample(CR, spec)
+    compress_rgb_block(oimg, CR, Quantize.QBASE_CHR)
 
 
 def decompress_rgb_block(R, quant):
     # Need to know the quantization type since this is a single block
     # not all three.
-    # First iRLC(R, 8)
-    # Then Dequantize(C, quant)
-    # Then iDCT(D)
-    # Finally return the matrix
-    print("Unsupported!")
-    sys.exit(1)
+    C = RLC.iRLC(R, 8)
+    D = Quantize.dequantize(C, quant)
+    M = DCT.iDCT(D)
+    return M
 
 
-def compress_rgb_image(img, oimg):
-    return compress_image(img, oimg, compress_rgb_block, (0, 0, 0))
+def compress_rgb_image(img, oimg, spec):
+    return compress_image(img, oimg, compress_rgb_blocks, (0, 0, 0), spec)
+
+
+def get_dec_rgb_block(img, blk):
+    R = img[blk]
+    blk += 1
+    Y = decompress_rgb_block(R, Quantize.QBASE_LUM)
+    R = img[blk]
+    blk += 1
+    CB = decompress_rgb_block(R, Quantize.QBASE_CHR)
+    R = img[blk]
+    blk += 1
+    CR = decompress_rgb_block(R, Quantize.QBASE_CHR)
+    A = Matrix.zero_matrix(len(Y[0]), len(Y))
+    for y in range(len(Y)):
+        for x in range(len(Y[0])):
+            A[y][x] = (Y[y][x], CB[y][x], CR[y][x])
+    return Colors.YCbCr_to_RGB(A)
 
 
 def decompress_rgb_image(img, outfile):
-    print("Unsupported!")
-    sys.exit(1)
+    N = 8
+    (width, height) = img.size
+    (wblocks, hblocks) = img.size_blocks
+    (twblocks, thblocks) = img.size_true_blocks
+
+    width_mod = width % N
+    width_bp = (width - width_mod, width_mod)
+
+    height_mod = height % N
+    height_bp = (height - height_mod, height_mod)
+
+    oimg = Image.new('RGB', img.size)
+
+    # Should probably check len(img) at some point
+    # but the exception handler will cover us.
+    blkidx = 0
+    for yb in range(hblocks):
+        ybp = (yb * N, N)
+        for xb in range(wblocks):
+            M = get_dec_rgb_block(img, blkidx)
+            blkidx += 3
+            copy_block(oimg, M, (xb * N, N), ybp, N)
+        if twblocks != wblocks:
+            # We have a partial X block to take care off
+            M = get_dec_rgb_block(img, blkidx)
+            blkidx += 3
+            copy_block(oimg, M, width_bp, ybp, N)
+    if thblocks != hblocks:
+        # Partial Y block
+        for xb in range(wblocks):
+            M = get_dec_rgb_block(img, blkidx)
+            blkidx += 3
+            copy_block(oimg, M, (xb * N, N), height_bp, N)
+        # Partial Y and Partial X block (bottom right corner)
+        if twblocks != wblocks:
+            M = get_dec_rgb_block(img, blkidx)
+            blkidx += 3
+            copy_block(oimg, M, width_bp, height_bp, N)
+    # They're getting a BMP.  Don't care if they don't want it.
+    oimg.save(outfile, 'BMP')
 
 
 if len(sys.argv) != 4:
-    print("Usage: {} <c|d> <input> <output.ncage>".format(sys.argv[0]))
+    print("Usage: {} c <input> <output.ncage>".format(sys.argv[0]))
+    print("       {} d <input.ncage> <output.bmp>".format(sys.argv[0]))
     sys.exit(1)
 
 op = sys.argv[1]
@@ -219,18 +291,18 @@ outfile = sys.argv[3]
 if op == 'c':
     img = Image.open(infile)
     mode = test_image_mode(img)
-    oimg = Compressor.NCage.NCageWriter(outfile, img.size[0], img.size[1], mode)
+    oimg = NCage.NCageWriter(outfile, img.size[0], img.size[1], mode)
 
-    if mode == Compressor.NCage.MODE_GRAYSCALE:
+    if mode == NCage.MODE_GRAYSCALE:
         compress_grayscale_image(img, oimg)
     else: # Only other mode is MODE_RGB
-        compress_rgb_image(img, oimg)
+        compress_rgb_image(img, oimg, "4:4:4")
     oimg.close()
 elif op == 'd':
-    img = Compressor.NCage.NCageReader()
+    img = NCage.NCageReader()
     img.load(infile)
 
-    if img.mode == Compressor.NCage.MODE_GRAYSCALE:
+    if img.mode == NCage.MODE_GRAYSCALE:
         decompress_grayscale_image(img, outfile)
     else: # Only other mode is MODE_RGB
         decompress_rgb_image(img, outfile)

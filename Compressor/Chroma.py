@@ -17,7 +17,7 @@ def validate_spec(spec):
         print("Invalid Chroma Subsampling format.")
         sys.exit(1)
 
-    if A != 4:
+    if a != 4:
         print("Chroma Subsampling must use 4 for the first value.")
         sys.exit(1)
 

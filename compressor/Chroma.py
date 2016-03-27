@@ -1,6 +1,7 @@
 import sys
 
 from PIL import Image
+import Compressor.Matrix
 
 def sampling(A, X, Y):
     """
@@ -47,68 +48,56 @@ def sampling(A, X, Y):
         else:
             print("Something went wrong.")
 
-def sample_420(imgstring):
+def sample_420(M):
     """
     Perform 4:2:0 subsampling on an image.
 
-    :param imgstring: a string of the target image's name
+    :param M: Matrix to perform sampling on.
 
-    :returns: an image with the filenamesubsampled_411_imgstring
+    :returns: SampledMatrix: a matrix with the subsampled data
     """
+    SampledMatrix = Compressor.Matrix.zero_matrix(len(M[0]), len(M))
 
-    try:
-        im = Image.open(imgstring)
-    except IOError:
-        print('This was an invalid file. Please try again.')
-        sys.exit(0)
-
-    for Y in range (im.size[1]):
+    for Y in range (len(M)):
         if (Y % 2) == 0: #if it's the first row, then copy every other pixel
-            for X in range (im.size[0]):
+            for X in range (len(M[0])):
                 i = 1
                 if (i == 1):
-                    (r,g,b) = im.getpixel((X,Y))
+                    (r,g,b) = M[Y][X]
+                    SampledMatrix[Y][X] = (r,g,b)
                     i = i + 1
                 else:
-                    im.putpixel((X,Y), (r,g,b))
+                    SampledMatrix[Y][X] = (r,g,b)
                     i = 1
 
         else: #if it's an even row, then copy pixel from the row above it
-            for X in range (im.size[0]):
-                (r,g,b) = im.getpixel((X,(Y-1)))
-                im.putpixel((X,Y-1), (r,g,b))
+            for X in range (len(M[0])):
+                (r,g,b) = M[Y-1][X]
+                SampledMatrix[Y][X] = (r,g,b)
 
-    outname = "subsampled_420_" + imgstring
-    im.save(outname)
+    return SampledMatrix
 
-def sample_411(imgstring):
+def sample_411(M):
     """
     Perform 4:1:1 subsampling on an image.
     The actual result is barely noticeable (I couldn't actually tell it had changed anything), but examining it in photoshop, it does perform as expected, thankfully.
 
-    :param imgstring: a string of the target image's name
+    :param M: Matrix to perform sampling on.
 
-    :returns: an image with the filenamesubsampled_411_imgstring
+    :returns: SampledMatrix: a matrix with the subsampled data
     """
 
-    try:
-        im = Image.open(imgstring)
-    except IOError:
-        print('This was an invalid file. Please try again.')
-        sys.exit(0)
-    # DEBUG: just making sure it's reading images correctly, remove
-    #im.show()
+    SampledMatrix = Compressor.Matrix.zero_matrix(len(M[0]), len(M))
 
-    for Y in range (im.size[1]):
-        for X in range (im.size[0]):
+    for Y in range (len(M)):
+        for X in range (len(M[0])):
             if (X % 4) == 0:
-                (r,g,b) = im.getpixel((X,Y))
-                i = i + 1
+                (r,g,b) = M[Y][X]
+                SampledMatrix[Y][X] = (r,g,b)
             else:
-                im.putpixel((X,Y), (r,g,b))
+                SampledMatrix[Y][X] = (r,g,b)
 
-    outname = "subsampled_411_" + imgstring
-    im.save(outname)
+    return SampledMatrix
 
 sample_in = input('Please enter chroma subsampling values in A:B:C form \nAvaliable values - 4:4:4, 4:2:0, 4:1:1 \nChroma Subsampling - ')
 try:

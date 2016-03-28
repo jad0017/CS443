@@ -1,0 +1,716 @@
+\documentclass{article}
+\usepackage{fullpage}
+\usepackage{setspace}
+\usepackage{changepage}
+\usepackage{listings}
+\usepackage{amsmath}
+\usepackage[perpage]{footmisc}
+\usepackage[normalem]{ulem}
+\usepackage{graphicx}
+\usepackage{float}
+\graphicspath{ {images/} }
+\begin{document}
+
+\lstset{
+	escapeinside={(*@}{@*)},
+	tabsize=4,
+	frame=single,
+	columns=flexible,
+	breaklines=true
+}
+
+
+\newcommand{\DropImageTwo}[2][]{%
+	\begin{figure}[H]
+		\centering
+			\fbox{\includegraphics[height=\textwidth,width=\textwidth,keepaspectratio]{#2}}
+		\caption{#1}
+	\end{figure}
+}
+
+
+\newcommand{\DropImage}[2][]{%
+	\begin{figure}[H]
+		\centering
+			\fbox{\includegraphics[height=\textwidth,width=\textwidth,keepaspectratio]{#2}}
+		\caption{#1}
+	\end{figure}
+}
+
+\begin{center}
+{\Huge\textbf{Group Project 1}} \\
+{\Large Team Sparkle Motion:} \\
+{Joshua Dickson\hspace*{2ex}Christy Lafayette\hspace*{2ex}Paul Eccleston}
+\end{center}
+\vspace*{4ex}
+
+
+\section{How To Run}
+
+Note: This project work with color (RGB) and grayscale images.
+
+\noindent
+Compressing an image:
+\begin{lstlisting}
+python3 ./main.py --compress --dump-dct-coefficients=out.dct in.jpg out.ncage
+\end{lstlisting}
+
+\noindent
+\texttt{--chroma-subsampling} is also a valid option.  See \texttt{--help} or
+README for more information.
+
+
+\noindent
+Decompressing an Image:
+\begin{lstlisting}
+python3 ./main.py --decompress in.ncage out.bmp
+\end{lstlisting}
+
+
+\noindent
+Computing difference/error:
+\begin{lstlisting}
+python3 ./error.py orig.jpg new.bmp
+\end{lstlisting}
+
+
+\noindent
+Computing difference (Image Form):
+\begin{lstlisting}
+python3 ./diff.py orig.jpg new.bmp out.diff.bmp
+\end{lstlisting}
+
+
+\noindent
+Dumping DCT coefficient block data:
+\begin{lstlisting}
+python3 ./dct.py --by-block in.dct 12 12
+\end{lstlisting}
+
+\noindent
+See \text{--help} text for more information and other options.
+
+
+\section{Output}
+
+\subsection{Using 4:4:4 subsampling}
+\begin{lstlisting}
+python3 ./main.py --compress in.jpg out.ncage
+python3 ./main.py --decompress out.ncage out.bmp
+python3 ./diff.py in.jpg out.bmp diff.bmp
+\end{lstlisting}
+
+
+\DropImage[Barn: Original]{barn}
+\DropImage[Barn: 4:4:4 Compressed]{barn-out}
+\DropImage[Barn: Diff 4:4:4 Compressed]{barn-diff}
+
+
+\DropImage[Sloth: Original]{sloth}
+\DropImage[Sloth: 4:4:4 Compressed]{sloth-out}
+\DropImage[Sloth: Diff 4:4:4 Compressed]{sloth-diff}
+
+\DropImage[Nick Cage: Original]{ncage}
+\DropImage[Nick Cage: 4:4:4 Compressed]{ncage-out}
+\DropImage[Nick Cage: Diff 4:4:4 Compressed]{ncage-diff}
+
+
+\subsection{DCT Output}
+
+\begin{lstlisting}
+python3 ./main.py --compress --dump-dct-coefficients=barn.dct barn.jpg barn.ncage
+python3 ./dct.py --print-size barn.dct
+\end{lstlisting}
+
+\noindent Output:
+\lstinputlisting{size}
+
+\newpage
+\begin{lstlisting}
+python3 ./dct.py --by-block barn.dct 12 12
+\end{lstlisting}
+
+\noindent Output:
+\lstinputlisting{block}
+
+\begin{lstlisting}
+python3 ./dct.py --by-block-num barn.dct 12
+\end{lstlisting}
+
+\noindent Output:
+\lstinputlisting{block-num}
+
+\newpage
+\begin{lstlisting}
+python3 ./dct.py --by-pixel barn.dct 12
+\end{lstlisting}
+
+\noindent Output:
+\lstinputlisting{pixel}
+
+\subsection{Error Computation}
+
+\begin{lstlisting}
+python3 ./main.py --compress barn.jpg barn.ncage
+python3 ./main.py --decompress barn.ncage barn.bmp
+python3 ./error.py barn.jpg barn.bmp
+\end{lstlisting}
+
+\noindent Output:
+\lstinputlisting{barn-error}
+
+\newpage
+\begin{lstlisting}
+python3 ./main.py --compress sloth.jpg sloth.ncage
+python3 ./main.py --decompress sloth.ncage sloth.bmp
+python3 ./error.py sloth.jpg sloth.bmp
+\end{lstlisting}
+
+\noindent Output:
+\lstinputlisting{sloth-error}
+
+\begin{lstlisting}
+python3 ./main.py --compress ncage.jpg ncage.ncage
+python3 ./main.py --decompress ncage.ncage ncage.bmp
+python3 ./error.py ncage.jpg ncage.bmp
+\end{lstlisting}
+
+\noindent Output:
+\lstinputlisting{ncage-error}
+
+
+
+
+\subsection{Chroma Subsampling Differences}
+
+\begin{lstlisting}
+python3 ./main.py --compress --chroma-subsampling=4:2:2 sloth.jpg sloth.422.ncage
+python3 ./main.py --decompress sloth.422.ncage sloth.422.bmp
+python3 ./main.py --compress --chroma-subsampling=4:2:0 sloth.jpg sloth.420.ncage
+python3 ./main.py --decompress sloth.420.ncage sloth.420.bmp
+python3 ./main.py --compress --chroma-subsampling=4:1:1 sloth.jpg sloth.411.ncage
+python3 ./main.py --decompress sloth.411.ncage sloth.411.bmp
+python3 ./main.py --compress --chroma-subsampling=4:1:0 sloth.jpg sloth.410.ncage
+python3 ./main.py --decompress sloth.410.ncage sloth.410.bmp
+\end{lstlisting}
+
+\newpage
+\begin{lstlisting}
+python3 ./diff.py sloth.422.bmp sloth.420.bmp sloth.422-420.bmp
+\end{lstlisting}
+
+\DropImageTwo[Sloth: Diff 4:2:2 and 4:2:0 Chroma Subsampling]{sloth-422-420-diff}
+
+\newpage
+\begin{lstlisting}
+python3 ./diff.py sloth.422.bmp sloth.411.bmp sloth.422-411.bmp
+\end{lstlisting}
+
+\DropImageTwo[Sloth: Diff 4:2:2 and 4:1:1 Chroma Subsampling]{sloth-422-411-diff}
+
+\newpage
+\begin{lstlisting}
+python3 ./diff.py sloth.422.bmp sloth.410.bmp sloth.422-410.bmp
+\end{lstlisting}
+
+\DropImageTwo[Sloth: Diff 4:2:2 and 4:1:0 Chroma Subsampling]{sloth-422-410-diff}
+
+
+
+\section{Pre-Meeting Notes (by Josh)}
+
+\subsection{Overview}
+
+This document is a quick layout of the compression and decompression
+streams according to the assignment specification.
+
+\subsection{Compression}
+
+The compression routine follows the following steps:
+\begin{enumerate}
+\item Convert RGB to $\text{YC}_{b}\text{C}_{r}$
+\item Perform chroma subsampling if requested
+\item Apply 2D DCT transform on Y, $\text{C}_{b}$, and $\text{C}_{r}$ components
+\item Apply Quantization
+\item Apply Run-Length Coding (RLC)
+\end{enumerate}
+
+\subsubsection{RGB to $\text{YC}_{b}\text{C}_{r}$}
+
+Simple conversion.  We did this for assignment 2.  I used a modification to
+the conversion matrix (shift values of 128 in place of the 0.5s).
+Alternate to my alternate would be shifting by 127.
+We need all values to be within the integer range $[0,256)$
+for the DCT calculation.
+
+Original:
+\[
+\begin{bmatrix}
+Y \\
+C_{b} \\
+C_{r}
+\end{bmatrix}
+=
+\begin{bmatrix}
+0.299 & 0.587 & 0.144 \\
+-0.168736 & -0.331264 & 0.5 \\
+0.5 & -0418688 & -0.081312
+\end{bmatrix}
+\begin{bmatrix}
+R \\
+G \\
+B
+\end{bmatrix}
++
+\begin{bmatrix}
+0\\
+0.5\\
+0.5
+\end{bmatrix}
+\]
+
+
+Modification:
+\[
+\begin{bmatrix}
+Y \\
+C_{b} \\
+C_{r}
+\end{bmatrix}
+=
+\begin{bmatrix}
+0.299 & 0.587 & 0.144 \\
+-0.168736 & -0.331264 & 0.5 \\
+0.5 & -0418688 & -0.081312
+\end{bmatrix}
+\begin{bmatrix}
+R \\
+G \\
+B
+\end{bmatrix}
++
+\begin{bmatrix}
+0\\
+128\\
+128
+\end{bmatrix}
+\]
+
+
+\subsubsection{Chroma Subsampling}
+
+This is an optional step.  The user can request any chroma
+subsampling value.  I suggest restricting this to a high-order
+of 4 so we have a small subset for easy input validation.
+The spec would be as follows:
+\begin{itemize}
+	\item $A$:$X$:$Y$ is invalid for $A \neq 4$
+	\item 4:4:4 means no change
+	\item 4:0:$X$ means duplicate the second row
+	\item 4:$X$:0 means duplicate the first row
+	\item 4:0:0 is invalid
+	\item 4:3:$X$ and 4:$X$:3 are invalid
+	\item 4:$A$:$B$ is invalid for $A$ or $B > 4$
+	\item A component of '1' means select the first pixel only
+	\item A component of '2' means select the first and third pixels only
+\end{itemize}
+
+\subsubsection{2D DCT Transform}
+
+We will be using 8 x 8 blocks.
+The following equations operate on 8 x 8 matrices.
+
+Equation 1.1:
+\[
+D(i,j) = \frac{1}{\sqrt{2N}} C(i) C(j)
+\sum\limits_{x=0}^{N-1}
+\sum\limits_{y=0}^{N-1}
+p(x,y)
+\text{cos}\bigg{[}
+\frac{i\pi(2x + 1)}{2N}
+\bigg{]}
+\text{cos}\bigg{[}
+\frac{j\pi(2y + 1)}{2N}
+\bigg{]}
+\]
+
+Equation 1.2:
+\[
+C(u) =
+\begin{cases}
+\frac{1}{\sqrt{2}} & \text{if\ } u = 0 \\
+1 & \text{if\ } u > 0
+\end{cases}
+\]
+
+Variables:
+\[
+p(x,y) = \text{the (x,y)-th element of the image represented by matrix p}
+\]
+\[
+N = \text{the size of the DCT block eight (8) in our case.}
+\]
+
+Simplified Equation 1.1 for 8 x 8 blocks:
+\[
+D(i,j) = \frac{1}{4} C(i) C(j)
+\sum\limits_{x=0}^{7}
+\sum\limits_{y=0}^{7}
+p(x,y)
+\text{cos}\bigg{[}
+\frac{i\pi(2x + 1)}{16}
+\bigg{]}
+\text{cos}\bigg{[}
+\frac{j\pi(2y + 1)}{16}
+\bigg{]}
+\]
+
+The derivative Translation matrix from Equation 1.1 is found with:
+\[
+T(i,j) =
+\begin{cases}
+\frac{1}{\sqrt{N}} & \text{if\ } i = 0 \\
+\sqrt{\frac{2}{N}} \text{cos}\bigg{[}\frac{i\pi(2j+1)}{2N}\bigg{]} & \text{if\ } i > 0
+\end{cases}
+\]
+
+We also need the transpose of $T$: $T'$.  This thing:
+\[
+\begin{bmatrix}
+1 & 2 & 3 \\
+4 & 5 & 6
+\end{bmatrix}^{T}
+=
+\begin{bmatrix}
+1 & 4 \\
+2 & 5 \\
+3 & 6
+\end{bmatrix}
+\]
+
+Once those are found, the DCT2 coefficient block is simply:
+\[ D = T M T' \]
+
+That wasn't so hard, right?
+
+\subsubsection{Quantization}
+
+This stage includes the following steps for each component ($\text{Y, C}_{b}\text{, C}_{r}$):
+\begin{enumerate}
+	\item Scale the base quantization matrix ($B$) to the quality factor given
+	\item Quantize the input DCT Coefficient matrix ($D$) with the scaled quantization matrix ($Q$)
+\end{enumerate}
+
+We were given two base quantization matrices:
+
+\[B_{luminance} =
+\begin{bmatrix}
+16 & 11 & 10 & 16 & 24 & 40 & 51 & 61 \\
+12 & 12 & 14 & 19 & 26 & 58 & 60 & 55 \\
+14 & 13 & 16 & 24 & 40 & 57 & 69 & 56 \\
+14 & 17 & 22 & 29 & 51 & 87 & 80 & 62 \\
+18 & 22 & 37 & 56 & 68 & 109 & 113 & 77 \\
+24 & 35 & 55 & 64 & 81 & 104 & 113 & 92 \\
+49 & 64 & 78 & 87 & 103 & 121 & 120 & 101 \\
+72 & 92 & 95 & 98 & 112 & 100 & 103 & 99
+\end{bmatrix}
+\]
+
+\[B_{chromanance} =
+\begin{bmatrix}
+17 & 18 & 24 & 47 & 99 & 99 & 99 & 99 \\
+18 & 21 & 26 & 66 & 99 & 99 & 99 & 99 \\
+24 & 26 & 56 & 99 & 99 & 99 & 99 & 99 \\
+47 & 66 & 99 & 99 & 99 & 99 & 99 & 99 \\
+99 & 99 & 99 & 99 & 99 & 99 & 99 & 99 \\
+99 & 99 & 99 & 99 & 99 & 99 & 99 & 99 \\
+99 & 99 & 99 & 99 & 99 & 99 & 99 & 99 \\
+99 & 99 & 99 & 99 & 99 & 99 & 99 & 99
+\end{bmatrix}
+\]
+
+\subsubsection{Scale the Base Quantization Matrix}
+
+The scale factor (where $s_{f}$ is the scale factor and $q$ is the requested quality):
+\[
+s_{f} =
+\begin{cases}
+\frac{100 - q}{50} & \text{if\ } q >= 50 \\
+\frac{50}{q} & \text{otherwise}
+\end{cases}
+\]
+
+\noindent
+The resultant, scaled quantization matrix $Q$ (where $B$ is the base quantization matrix):
+\[
+Q_{i,j} =
+\begin{cases}
+\text{clip}(\text{round}(B_{i,j} * s_{f})) & \text{if\ } s_{f} \ne 0 \\
+B_{i,j} & \text{if\ } s_{f} = 0
+\end{cases}
+\]
+\noindent
+The clip function:
+\[
+\text{clip}(x) =
+\begin{cases}
+255 & \text{if\ } x > 255 \\
+x & \text{otherwise}
+\end{cases}
+\]
+
+\subsubsection{Quantize With Scaled Matrix}
+
+The equation for the resultant quantized input $C$ (where $D$ is the DCT Coefficient Matrix
+and $Q$ is the scaled quantization matrix):
+\[
+C_{i,j} = \text{round}\bigg{(}\frac{D_{i,j}}{Q_{i,j}}\bigg{)}
+\]
+
+\subsubsection{Run-Length Coding (RLC)}
+
+Now that we have the quantized matrix $C$, we need to apply Run-Length Coding
+in a \textit{snake} pattern.  I decided to just write up the algorithm for this
+because it's annoying.  This takes advantage of a constant translation array
+for 8 x 8 matrices as follows.
+\newpage
+\begin{lstlisting}[language=python]
+# RLC translational lookup array
+R = [
+    (0,0),
+    (0,1), (1,0),
+    (2,0), (1,1), (0,2),
+    (0,3), (1,2), (2,1), (3,0),
+    (4,0), (3,1), (2,2), (1,3), (0,4),
+    (0,5), (1,4), (2,3), (3,2), (4,1), (5,0),
+    (6,0), (5,1), (4,2), (3,3), (2,4), (1,5), (0,6),
+    (0,7), (1,6), (2,5), (3,4), (4,3), (5,2), (6,1), (7,0),
+    (1,7), (2,6), (3,5), (4,4), (5,3), (6,2), (7,1),
+    (7,2), (6,3), (5,4), (4,5), (3,6), (2,7),
+    (3,7), (4,6), (5,5), (6,4), (7,3),
+    (7,4), (6,5), (5,6), (4,7),
+    (5,7), (6,6), (7,5),
+    (7,6), (6,7),
+	(7,7)
+]
+
+# Output is an array of tuples of the form (count, value).
+def RLC(C):
+	global R
+	a = []
+	current = C[0][0]
+	count = 0
+	for i in range(len(R)):
+		(y,x) = R[i]
+		if C[y][x] == current:
+			count += 1
+		else:
+			a.append( (count, current) )
+			current = C[y][x]
+			count = 1
+	a.append( (count, current) )
+	return a
+\end{lstlisting}
+
+\subsection{Decompression}
+
+The decompression routine follows the following steps:
+\begin{enumerate}
+\item Apply Inverse Run-Length Coding (iRLC)
+\item Apply De-Quantization
+\item Apply the Inverse 2D DCT transform (iDCT)
+\item Convert $\text{YC}_{b}\text{C}_{r}$ to RGB
+\end{enumerate}
+
+\noindent
+Note I've skipped his 3: Get the $\text{YC}_{b}\text{C}_{r}$
+values for each pixel by assigning values from subsampled chroma data.
+It was skipped because it didn't make sense\ldots\ superfluous even.
+
+\subsubsection{Inverse Run-Length Coding (iRLC)}
+
+This is simple again, I just opted to write it too.
+This function takes the tuple array form from the RLC
+algorithm and also uses the same translation array ($R$).
+
+\begin{lstlisting}[language=python]
+# Create a zero matrix of size n x m
+def zero_matrix(n, m):
+	return [ [ 0 for c in range(n) ] for r in range(m) ]
+
+def iRLC(a):
+	global R
+	n = math.sqrt(len(R)) # or just 8...
+	A = zero_matrix(n, n)
+	idx = 0
+	for i in range(len(a)):
+		(count, val) = a[i]
+		for j in range(count):
+			(y,x) = R[idx]
+			idx += 1
+			A[y][x] = val
+	return A
+\end{lstlisting}
+
+\subsubsection{De-Quantization}
+
+We use the same scaling algorithm from Section 2.4.1
+to get the value of $Q$. $C$ is the result of iRLC.
+This produces $D$ which is the DCT coefficient matrix.
+\[
+D_{i,j} = Q_{i,j} * C_{i,j}
+\]
+
+It's just multiplication.
+
+\subsubsection{Inverse 2D DCT (iDCT)}
+
+$T$ and $T'$ are the same from section 2.3.
+$D$ is the result of De-Quantization.
+$N$ is our resultant \textit{N}ew 8x8 matrix block.
+
+Equation 2:
+\[
+N = \text{round}(T' D T) + 128
+\]
+\noindent
+The shift ($128$) is just to get back to a $[0,256)$ range for the values.
+
+\subsubsection{Convert $\text{YC}_{b}\text{C}_{r}$ to RGB}
+\[
+\begin{bmatrix}
+R \\
+G \\
+B
+
+\end{bmatrix}
+=
+\Bigg{(}
+\begin{bmatrix}
+Y \\
+C_{b} \\
+C_{r}
+\end{bmatrix}
++
+\begin{bmatrix}
+0 \\
+-128 \\
+-128
+\end{bmatrix}
+\Bigg{)}
+\begin{bmatrix}
+1 & 0 & 1.402 \\
+1 & -0.34414 & -0.71414 \\
+1 & 1.772 & 0
+\end{bmatrix}
+\]
+Simplifies to this:
+\begin{align*}
+R & = & Y & & + 1.402 (C_{r} - 128) \\
+G & = & Y & - 0.34414 (C_{b} - 128) & - 0.71414 (C_{r} - 128) \\
+B & = & Y & + 1.772 (C_{b} - 128) &
+\end{align*}
+
+\noindent
+Annnnd that's it.
+
+\subsection{Error Computation}
+
+This is trivial.  Just including the equations for completeness.
+
+\subsubsection{Error}
+$I$ is the original image.
+$I'$ is the result of compression and then decompression.
+\[
+MSE = \frac{1}{MN}\sum\limits_{y=1}^{M}\sum\limits_{x=1}^N
+\bigg{[}
+I(x,y) - I'(x,y)
+\bigg{]}^2
+\]
+
+\subsubsection{Peak Signal-to-Noise Ratio}
+\[
+PSNR = 20 \text{log}_{10}\bigg{(}\frac{255}{\sqrt{MSE}}\bigg{)}
+\]
+
+\subsection{Display}
+
+We do not need a graphical user interface.
+Command line is fine as long as it is well-defined.  We can discuss this later.
+\\\\
+Basically, we need to dump internal-states during processing for:
+\begin{itemize}
+\item Error and PSNR for Y, Cb, Cr, R, G, and B
+\item DCT Coefficient matrices for all blocks
+\end{itemize}
+
+\noindent
+Then probably just write a small application to process and display the dumps
+in a pretty format.
+
+\section{Meeting 1 Notes (March 20)}
+
+\noindent
+Attendies: Christy, Josh, and Paul.
+
+
+\noindent
+Main topic was tasking.  Josh led the discussion.
+\begin{enumerate}
+\item Christy:
+\begin{enumerate}
+\item RGB $<->$ YCbCr conversions
+\item Chroma Subsampling
+\end{enumerate}
+\item Josh:
+\begin{enumerate}
+\item RLC and inverse
+\item DCT and inverse
+\item Quantization and inverse
+\item Image Loop (splitting into 8x8 chunks, etc.)
+\end{enumerate}
+\item Paul:
+\begin{enumerate}
+\item Make Github Repository
+\item Error Computation
+\item CLI
+\end{enumerate}
+\end{enumerate}
+
+\section{Meeting 2 Notes (March 27)}
+\noindent
+Attendies: Christy and Josh.
+
+
+\noindent
+Topic was status and next steps.
+
+
+\noindent
+Status:
+\begin{enumerate}
+\item Christy:
+\begin{enumerate}
+\item \sout{RGB $<->$ YCbCr conversions} (DONE)
+\item \sout{Chroma Subsampling} (DONE)
+\end{enumerate}
+\item Josh:
+\begin{enumerate}
+\item \sout{RLC and inverse} (DONE)
+\item \sout{DCT and inverse} (DONE)
+\item \sout{Quantization and inverse} (DONE)
+\item \sout{Image Loop (splitting into 8x8 chunks, etc.)} (DONE)
+\end{enumerate}
+\item Paul:
+\begin{enumerate}
+\item \sout{Make Github Repository} (DONE)
+\item \sout{Error Computation} (DONE)
+\item CLI (PARTIAL)
+\end{enumerate}
+\end{enumerate}
+
+\noindent
+Josh ended up completing the CLI so that Paul could work on Senior Design.
+
+
+\end{document}

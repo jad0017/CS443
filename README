@@ -24,8 +24,8 @@ For an image diff:
 To dump the DCT coefficient block data:
   python3 dct.py in.dct wblock hblock
     Example:
-	  $ python3 dct.py in.dct 12 12
-	  Block 1224 (12,12):
+	  $ python3 dct.py --by-block in.dct 12 12
+	  Block 1224 (12, 12):
 	  [ 0 1 2 3 4 5 6 7 ]
 	  [ 0 1 2 3 4 5 6 7 ]
 	  [ 0 1 2 3 4 5 6 7 ]

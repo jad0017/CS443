@@ -19,15 +19,26 @@ from Compressor import Matrix
 from Compressor import Quantize
 from Compressor import RLC
 
+import pickle
+
+dct_outfile = None
+
 def usage():
     print("Usage: %s --compress [options] <input> <output.ncage>"
           % (sys.argv[0],))
-    print("       %s --decompress [options] <input.ncage> <output.bmp>"
+    print("       %s --decompress <input.ncage> <output.bmp>"
           % (sys.argv[0],))
-    print("\nOptions:")
+    print("\nCompress Options:")
     print(" --chroma-subsampling=<spec>   Use Chroma Subsampling (ex. 4:2:0)")
     print(" --dump-dct-coefficients=<out> Dump DCT coefficients per block to")
     print("                               the file <out>.")
+
+
+def add_dct_block(M):
+    global dct_outfile
+    if dct_outfile is None:
+        return
+    pickle.dump(M, dct_outfile, 2)
 
 
 def test_image_mode(img):
@@ -112,6 +123,7 @@ def compress_image(img, oimg, compress_block_fn, block_type, spec):
 def compress_grayscale_block(oimg, M, spec):
     # Single Channel: Luminance
     D = DCT.DCT(M)
+    add_dct_block(D)
     C = Quantize.quantize(D, Quantize.QBASE_LUM)
     R = RLC.RLC(C)
     oimg.write_block_rlc(R)
@@ -190,6 +202,7 @@ def decompress_grayscale_image(img, outfile):
 
 def compress_rgb_block(oimg, M, quant):
     D = DCT.DCT(M)
+    add_dct_block(D)
     C = Quantize.quantize(D, quant)
     R = RLC.RLC(C)
     oimg.write_block_rlc(R)
@@ -326,7 +339,7 @@ for o,a in opts:
         decompress = True
     elif o == "--chroma-subsampling":
         chroma_spec = a
-    elif o == "--dunp-dct-coefficients":
+    elif o == "--dump-dct-coefficients":
         dct_output = a
     else:
         print("Unknown option:", o)
@@ -345,10 +358,26 @@ elif len(args) > 2:
 infile = args[0]
 outfile = args[1]
 
+if dct_output is not None and decompress:
+    print("--dump-dct-coefficients can only be used with --compress!")
+    usage()
+    sys.exit(1)
+
+if chroma_spec != "4:4:4" and decompress:
+    print("--chroma-subsampling can only be used with --compress!")
+    usagE()
+    sys.exit(1)
+
+if dct_output is not None:
+    dct_outfile = open(dct_output, 'wb')
+
 if compress:
     img = Image.open(infile)
     mode = test_image_mode(img)
     oimg = NCage.NCageWriter(outfile, img.size[0], img.size[1], mode)
+
+    if dct_outfile is not None:
+        pickle.dump(img.size, dct_outfile, 2)
 
     if mode == NCage.MODE_GRAYSCALE:
         compress_grayscale_image(img, oimg)
@@ -359,6 +388,9 @@ elif decompress:
     img = NCage.NCageReader()
     img.load(infile)
 
+    if dct_outfile is not None:
+        pickle.dump(img.size, dct_outfile, 2)
+
     if img.mode == NCage.MODE_GRAYSCALE:
         decompress_grayscale_image(img, outfile)
     else: # Only other mode is MODE_RGB
@@ -367,5 +399,8 @@ else:
     print("One of --compress and --decompress must be specified!")
     usage()
     sys.exit(1)
+
+if dct_outfile is not None:
+    dct_outfile.close()
 
 sys.exit(0)

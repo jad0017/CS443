@@ -13,10 +13,6 @@ def usage():
 def error_gray(im1, im2):
     s = 0
 
-    if not im1.size == im2.size:
-        print("Images are different sizes!")
-        sys.exit(1)
-
     for Y in range(im1.size[1]):
         for X in range(im1.size[0]):
             s1 = im1.getpixel((X, Y))
@@ -39,10 +35,6 @@ def error_gray(im1, im2):
 def error_rgb(im1, im2):
     (rs,  gs,  bs) = (0, 0, 0)
     (ys, cbs, crs) = (0, 0, 0)
-
-    if not im1.size == im2.size:
-        print("Images are different sizes!")
-        sys.exit(1)
 
     for Y in range(im1.size[1]):
         for X in range(im1.size[0]):
@@ -104,6 +96,10 @@ im2 = Image.open(sys.argv[2])
 
 if im1.mode != im2.mode:
     print("Image modes differ!")
+    sys.exit(1)
+
+if im1.size != im2.size:
+    print("Images are different sizes!")
     sys.exit(1)
 
 if im1.mode == 'L':

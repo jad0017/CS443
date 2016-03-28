@@ -1,3 +1,11 @@
+Required Modules:
+
+This requires the PIL or Pillow modules for python3.
+
+    easy_install pillow
+  or
+    easy_install PIL
+
 Usage:
 
 Compress to custom format:
